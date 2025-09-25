@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GLB Model Viewer Website</title>
+  <link rel="icon" href="data:,">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    header, section {
+      padding: 50px;
+      text-align: center;
+    }
+
+    .viewer-container {
+      position: relative;
+      width: 100%;
+      height: 100vh; /* One full screen height */
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <!-- Normal website content -->
+  <header>
+    <h1>Welcome to My 3D Model Viewer Website</h1>
+    <p>Scroll down to view the interactive 3D model.</p>
+  </header>
+
+  <!-- 3D model section -->
+  <section class="viewer-container" id="viewer"></section>
+
+  <!-- More content -->
+  <section>
+    <h2>About This Model</h2>
+    <p>
+      This GLB model is displayed using Three.js (v0.126.1) for compatibility
+      with older systems. You can rotate, zoom, and explore the model interactively.
+    </p>
+  </section>
+
+  <section>
+    <h2>More Information</h2>
+    <p>
+      Add more sections, images, or project details here so the site feels like
+      a real webpage, not just a fullscreen viewer.
+    </p>
+  </section>
+
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.126.1/build/three.module.js";
+    import { OrbitControls } from "https://unpkg.com/three@0.126.1/examples/jsm/controls/OrbitControls.js";
+    import { GLTFLoader } from "https://unpkg.com/three@0.126.1/examples/jsm/loaders/GLTFLoader.js";
+
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdddddd);
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(75, 2, 0.1, 1000);
+    camera.position.set(0, 2, 5);
+
+    // Renderer (WebGL1 for old GPUs)
+    const container = document.getElementById("viewer");
+    const renderer = new THREE.WebGL1Renderer({ antialias: true });
+    container.appendChild(renderer.domElement);
+
+    function resizeRendererToDisplaySize() {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Lights
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(3, 10, 10);
+    scene.add(dirLight);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    // Grid Helper
+    const gridHelper = new THREE.GridHelper(10, 20);
+    scene.add(gridHelper);
+
+    // Load GLB model
+    const loader = new GLTFLoader();
+    loader.load("./Demo_model_Rooftop.glb", function (gltf) {
+      const model = gltf.scene;
+      model.scale.set(2, 2, 2);
+
+      // Replace unsupported materials
+      model.traverse((child) => {
+        if (child.isMesh) {
+          if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+            child.material = new THREE.MeshStandardMaterial({
+              color: child.material.color || new THREE.Color(0xffffff),
+              map: child.material.map || null,
+              metalness: 0.5,
+              roughness: 0.5,
+            });
+          }
+        }
+      });
+
+      scene.add(model);
+    });
+
+    // Animate
+    function animate() {
+      requestAnimationFrame(animate);
+      resizeRendererToDisplaySize();
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
